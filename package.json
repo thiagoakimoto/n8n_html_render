@@ -4,7 +4,8 @@
   "description": "Micro API serverless para geração de PDFs com Markdown e LaTeX",
   "main": "api/index.js",
   "scripts": {
-    "dev": "vercel dev",
+    "start": "node server.js",
+    "dev": "node server.js",
     "deploy": "vercel --prod"
   },
   "keywords": [
@@ -15,10 +16,13 @@
     "vercel"
   ],
   "dependencies": {
-    "puppeteer-core": "^21.11.0",
-    "@sparticuz/chromium": "^119.0.2"
+    "@sparticuz/chromium": "^119.0.2",
+    "puppeteer-core": "^21.11.0"
   },
   "engines": {
     "node": ">=18.x"
+  },
+  "devDependencies": {
+    "vercel": "^50.9.3"
   }
 }
