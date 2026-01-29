@@ -1,0 +1,24 @@
+{
+  "name": "pdf-generator-api",
+  "version": "1.0.0",
+  "description": "Micro API serverless para geração de PDFs com Markdown e LaTeX",
+  "main": "api/index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "pdf",
+    "markdown",
+    "latex",
+    "serverless",
+    "vercel"
+  ],
+  "dependencies": {
+    "puppeteer-core": "^21.11.0",
+    "@sparticuz/chromium": "^119.0.2"
+  },
+  "engines": {
+    "node": ">=18.x"
+  }
+}
