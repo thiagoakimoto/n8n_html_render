@@ -68,16 +68,23 @@ module.exports = async (req, res) => {
     });
 
     // CRÍTICO: Aguardar renderização completa do MathJax
-    // Verifica se existe a classe mathjax-finished no body
-    await page.waitForSelector('body.mathjax-finished', {
-      timeout: 25000
+    // Estratégia robusta: aguarda scripts carregarem e MathJax processar
+    await page.evaluate(() => {
+      return new Promise((resolve) => {
+        // Se MathJax existe, aguarda processamento
+        if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+          MathJax.typesetPromise().then(resolve).catch(resolve);
+        } else {
+          // Se não tem MathJax, resolve imediatamente
+          resolve();
+        }
+      });
     }).catch(() => {
-      // Se não encontrar a classe, continua mesmo assim
-      console.log('MathJax não encontrado ou já renderizado');
+      console.log('MathJax não encontrado ou timeout');
     });
 
-    // Aguardar um tempo adicional para garantir renderização
-    await page.waitForTimeout(1000);
+    // Aguardar tempo adicional para garantir renderização final
+    await page.waitForTimeout(2000);
 
     // Geração do PDF
     const pdfBuffer = await page.pdf({
