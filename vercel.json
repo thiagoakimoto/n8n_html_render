@@ -3,8 +3,7 @@
   "functions": {
     "api/**/*.js": {
       "maxDuration": 60,
-      "memory": 1024,
-      "runtime": "nodejs20.x"
+      "memory": 1024
     }
   },
   "rewrites": [
