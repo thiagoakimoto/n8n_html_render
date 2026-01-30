@@ -3,7 +3,7 @@
   "functions": {
     "api/**/*.js": {
       "maxDuration": 60,
-      "memory": 1024
+      "memory": 3008
     }
   },
   "rewrites": [
@@ -12,5 +12,6 @@
       "destination": "/api"
     }
   ],
-  "regions": ["gru1"]
+  "regions": ["gru1"],
+  "buildCommand": "npm install"
 }
