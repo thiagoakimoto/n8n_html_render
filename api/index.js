@@ -32,15 +32,18 @@ module.exports = async (req, res) => {
     let launchOptions;
 
     if (isProduction) {
-      // Ambiente Serverless (Vercel/AWS Lambda) - VERSÃO ATUAL
+      // Ambiente Serverless (Vercel/AWS Lambda) - VERSÃO ESTÁVEL 119
       const chromium = require('@sparticuz/chromium');
       
       launchOptions = {
-        args: chromium.args,
+        args: [
+          ...chromium.args,
+          '--disable-software-rasterizer',
+          '--single-process'
+        ],
         defaultViewport: chromium.defaultViewport,
         executablePath: await chromium.executablePath(),
-        headless: chromium.headless,
-        ignoreHTTPSErrors: true
+        headless: chromium.headless
       };
     } else {
       // Ambiente Local (Development)
