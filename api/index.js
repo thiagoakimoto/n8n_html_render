@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer-core');
 
 /**
  * Micro API Serverless para Geração de PDFs
- * Converte Markdown + LaTeX + Imagem de Capa em PDF
+ * Converte HTML em PDF com suporte a MathJax
  */
 module.exports = async (req, res) => {
   // Validação do método HTTP
@@ -16,13 +16,30 @@ module.exports = async (req, res) => {
   let browser = null;
 
   try {
-    // Extração e validação dos dados do body
-    const { html_final } = req.body;
+    // ===== PARSING DO BODY =====
+    let bodyData = req.body;
+    
+    // Se o body vier como string, fazer parse manual
+    if (typeof req.body === 'string') {
+      try {
+        bodyData = JSON.parse(req.body);
+      } catch (parseError) {
+        console.error('Erro ao fazer parse do body:', parseError);
+        return res.status(400).json({
+          error: 'JSON inválido',
+          message: 'O corpo da requisição deve ser um JSON válido'
+        });
+      }
+    }
+
+    // Extração e validação dos dados
+    const { html_final } = bodyData;
 
     if (!html_final) {
       return res.status(400).json({
         error: 'Dados inválidos',
-        message: 'O campo "html_final" é obrigatório'
+        message: 'O campo "html_final" é obrigatório',
+        received: Object.keys(bodyData)
       });
     }
 
@@ -32,12 +49,8 @@ module.exports = async (req, res) => {
     let launchOptions;
 
     if (isProduction) {
-      // Ambiente Serverless (Vercel/AWS Lambda) - VERSÃO ESTÁVEL 119
+      // Ambiente Serverless (Vercel/AWS Lambda)
       const chromium = require('@sparticuz/chromium');
-      
-      // Configurações específicas para Vercel
-      chromium.setHeadlessMode = true;
-      chromium.setGraphicsMode = false;
       
       launchOptions = {
         args: [
@@ -45,11 +58,13 @@ module.exports = async (req, res) => {
           '--disable-software-rasterizer',
           '--single-process',
           '--no-zygote',
-          '--disable-setuid-sandbox'
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage'
         ],
         defaultViewport: chromium.defaultViewport,
         executablePath: await chromium.executablePath(),
-        headless: chromium.headless
+        headless: chromium.headless,
+        ignoreHTTPSErrors: true
       };
     } else {
       // Ambiente Local (Development)
@@ -64,18 +79,20 @@ module.exports = async (req, res) => {
       };
     }
 
+    console.log('🚀 Iniciando browser...');
     // Inicialização do Browser
     browser = await puppeteer.launch(launchOptions);
     const page = await browser.newPage();
 
+    console.log('📄 Carregando HTML...');
     // Carregamento do conteúdo HTML
     await page.setContent(html_final, {
       waitUntil: 'networkidle0',
       timeout: 30000
     });
 
+    console.log('🔢 Processando MathJax...');
     // CRÍTICO: Aguardar renderização completa do MathJax
-    // Estratégia robusta: aguarda scripts carregarem e MathJax processar
     await page.evaluate(() => {
       return new Promise((resolve) => {
         // Se MathJax existe, aguarda processamento
@@ -87,12 +104,14 @@ module.exports = async (req, res) => {
         }
       });
     }).catch(() => {
-      console.log('MathJax não encontrado ou timeout');
+      console.log('⚠️ MathJax não encontrado ou timeout');
     });
 
-    // Aguardar tempo adicional para garantir renderização final
-    await page.waitForTimeout(2000);
+    // ===== FIX: Substituir waitForTimeout por setTimeout =====
+    console.log('⏳ Aguardando renderização final...');
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
+    console.log('📋 Gerando PDF...');
     // Geração do PDF
     const pdfBuffer = await page.pdf({
       format: 'A4',
@@ -103,8 +122,11 @@ module.exports = async (req, res) => {
         bottom: '20mm',
         left: '15mm'
       },
-      displayHeaderFooter: false
+      displayHeaderFooter: false,
+      timeout: 60000
     });
+
+    console.log('✅ PDF gerado com sucesso!');
 
     // Retorno do PDF
     res.setHeader('Content-Type', 'application/pdf');
@@ -114,23 +136,28 @@ module.exports = async (req, res) => {
     return res.status(200).send(pdfBuffer);
 
   } catch (error) {
-    console.error('Erro ao gerar PDF:', error);
+    console.error('❌ Erro ao gerar PDF:', error);
+    console.error('Stack completo:', error.stack);
 
     // Tratamento de erros específicos
     let statusCode = 500;
     let errorMessage = 'Erro interno ao gerar PDF';
 
-    if (error.name === 'TimeoutError') {
+    if (error.name === 'TimeoutError' || error.message.includes('timeout')) {
       statusCode = 504;
       errorMessage = 'Timeout ao renderizar o conteúdo';
-    } else if (error.message.includes('timeout')) {
-      statusCode = 504;
-      errorMessage = 'Tempo limite excedido ao processar o documento';
+    } else if (error.message.includes('Could not find') || error.message.includes('executablePath')) {
+      statusCode = 500;
+      errorMessage = 'Erro ao inicializar o navegador (Chromium não encontrado)';
+    } else if (error.message.includes('Navigation')) {
+      statusCode = 500;
+      errorMessage = 'Erro ao carregar o HTML';
     }
 
     return res.status(statusCode).json({
       error: errorMessage,
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
 
   } finally {
@@ -138,8 +165,9 @@ module.exports = async (req, res) => {
     if (browser) {
       try {
         await browser.close();
+        console.log('🔒 Browser fechado');
       } catch (closeError) {
-        console.error('Erro ao fechar browser:', closeError);
+        console.error('⚠️ Erro ao fechar browser:', closeError);
       }
     }
   }

@@ -6,14 +6,5 @@
       "memory": 1024
     }
   },
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api"
-    }
-  ],
-  "regions": ["gru1"],
-  "env": {
-    "FONTCONFIG_PATH": "/tmp"
-  }
+  "regions": ["gru1"]
 }
