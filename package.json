@@ -16,8 +16,8 @@
     "vercel"
   ],
   "dependencies": {
-    "@sparticuz/chromium": "116.0.0",
-    "puppeteer-core": "21.1.1"
+    "chrome-aws-lambda": "^10.1.0",
+    "puppeteer-core": "^10.4.0"
   },
   "engines": {
     "node": ">=18.x"
