@@ -12,5 +12,8 @@
       "destination": "/api"
     }
   ],
-  "regions": ["gru1"]
+  "regions": ["gru1"],
+  "env": {
+    "FONTCONFIG_PATH": "/tmp"
+  }
 }

@@ -35,11 +35,17 @@ module.exports = async (req, res) => {
       // Ambiente Serverless (Vercel/AWS Lambda) - VERSÃO ESTÁVEL 119
       const chromium = require('@sparticuz/chromium');
       
+      // Configurações específicas para Vercel
+      chromium.setHeadlessMode = true;
+      chromium.setGraphicsMode = false;
+      
       launchOptions = {
         args: [
           ...chromium.args,
           '--disable-software-rasterizer',
-          '--single-process'
+          '--single-process',
+          '--no-zygote',
+          '--disable-setuid-sandbox'
         ],
         defaultViewport: chromium.defaultViewport,
         executablePath: await chromium.executablePath(),
