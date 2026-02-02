@@ -36,9 +36,7 @@ module.exports = async (req, res) => {
       // Ambiente Serverless (Vercel/AWS Lambda)
       const chromium = require('@sparticuz/chromium');
       
-      chromiumExecutable = await chromium.executablePath({
-        path: '/tmp'
-      });
+      chromiumExecutable = await chromium.executablePath();
       
       launchOptions = {
         args: [
