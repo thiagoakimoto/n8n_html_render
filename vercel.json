@@ -6,11 +6,10 @@
       "memory": 1024
     }
   },
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api"
+  "regions": ["gru1"],
+  "build": {
+    "env": {
+      "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true"
     }
-  ],
-  "regions": ["gru1"]
+  }
 }

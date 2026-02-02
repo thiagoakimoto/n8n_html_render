@@ -1,4 +1,4 @@
-// ===== IMPORTANTE: Adicionar no TOPO do arquivo =====
+// Forçar uso de /tmp
 process.env.HOME = '/tmp';
 process.env.TMPDIR = '/tmp';
 
@@ -6,10 +6,8 @@ const puppeteer = require('puppeteer-core');
 
 /**
  * Micro API Serverless para Geração de PDFs
- * Converte HTML em PDF com suporte a MathJax
  */
 module.exports = async (req, res) => {
-  // Validação do método HTTP
   if (req.method !== 'POST') {
     return res.status(405).json({
       error: 'Método não permitido',
@@ -20,14 +18,12 @@ module.exports = async (req, res) => {
   let browser = null;
 
   try {
-    // ===== PARSING DO BODY =====
     let bodyData = req.body;
     
     if (typeof req.body === 'string') {
       try {
         bodyData = JSON.parse(req.body);
       } catch (parseError) {
-        console.error('Erro ao fazer parse do body:', parseError);
         return res.status(400).json({
           error: 'JSON inválido',
           message: 'O corpo da requisição deve ser um JSON válido'
@@ -40,8 +36,7 @@ module.exports = async (req, res) => {
     if (!html_final) {
       return res.status(400).json({
         error: 'Dados inválidos',
-        message: 'O campo "html_final" é obrigatório',
-        received: Object.keys(bodyData)
+        message: 'O campo "html_final" é obrigatório'
       });
     }
 
@@ -52,12 +47,26 @@ module.exports = async (req, res) => {
     if (isProduction) {
       const chromium = require('@sparticuz/chromium');
       
+      // Configuração simplificada e robusta
       launchOptions = {
-        args: chromium.args,
+        args: [
+          ...chromium.args,
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process',
+          '--disable-gpu'
+        ],
         defaultViewport: chromium.defaultViewport,
         executablePath: await chromium.executablePath(),
-        headless: chromium.headless
+        headless: chromium.headless,
+        ignoreHTTPSErrors: true
       };
+
+      console.log('🔍 Chromium path:', launchOptions.executablePath);
     } else {
       launchOptions = {
         headless: true,
@@ -90,10 +99,10 @@ module.exports = async (req, res) => {
         }
       });
     }).catch(() => {
-      console.log('⚠️ MathJax não encontrado ou timeout');
+      console.log('⚠️ MathJax não encontrado');
     });
 
-    console.log('⏳ Aguardando renderização final...');
+    console.log('⏳ Aguardando renderização...');
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     console.log('📋 Gerando PDF...');
@@ -110,7 +119,7 @@ module.exports = async (req, res) => {
       timeout: 60000
     });
 
-    console.log('✅ PDF gerado com sucesso!');
+    console.log('✅ PDF gerado! Tamanho:', pdfBuffer.length, 'bytes');
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="documento.pdf"');
@@ -119,27 +128,23 @@ module.exports = async (req, res) => {
     return res.status(200).send(pdfBuffer);
 
   } catch (error) {
-    console.error('❌ Erro ao gerar PDF:', error);
+    console.error('❌ ERRO COMPLETO:', error);
     console.error('Stack completo:', error.stack);
 
     let statusCode = 500;
-    let errorMessage = 'Erro interno ao gerar PDF';
+    let errorMessage = 'Erro ao gerar PDF';
 
-    if (error.name === 'TimeoutError' || error.message.includes('timeout')) {
+    if (error.message.includes('libnss3') || error.message.includes('shared libraries')) {
+      errorMessage = 'Erro de biblioteca do Chromium';
+    } else if (error.name === 'TimeoutError') {
       statusCode = 504;
-      errorMessage = 'Timeout ao renderizar o conteúdo';
-    } else if (error.message.includes('Could not find') || error.message.includes('executablePath')) {
-      statusCode = 500;
-      errorMessage = 'Erro ao inicializar o navegador (Chromium não encontrado)';
-    } else if (error.message.includes('Navigation')) {
-      statusCode = 500;
-      errorMessage = 'Erro ao carregar o HTML';
+      errorMessage = 'Timeout ao renderizar';
     }
 
     return res.status(statusCode).json({
       error: errorMessage,
       details: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      stack: error.stack
     });
 
   } finally {
@@ -147,8 +152,8 @@ module.exports = async (req, res) => {
       try {
         await browser.close();
         console.log('🔒 Browser fechado');
-      } catch (closeError) {
-        console.error('⚠️ Erro ao fechar browser:', closeError);
+      } catch (e) {
+        console.error('Erro ao fechar:', e);
       }
     }
   }

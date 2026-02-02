@@ -17,11 +17,11 @@
     "vercel"
   ],
   "dependencies": {
-    "@sparticuz/chromium": "^119.0.2",
-    "puppeteer-core": "^21.11.0"
+    "@sparticuz/chromium": "^126.0.0",
+    "puppeteer-core": "^22.15.0"
   },
   "engines": {
-    "node": "24.x"
+    "node": "20.x"
   },
   "devDependencies": {
     "vercel": "^33.0.0"
