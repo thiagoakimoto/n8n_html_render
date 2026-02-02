@@ -5,7 +5,48 @@ const puppeteer = require('puppeteer-core');
  * Converte HTML em PDF com suporte a MathJax
  */
 module.exports = async (req, res) => {
-  // Validação do método HTTP
+  // Rota GET - Página de informações
+  if (req.method === 'GET') {
+    return res.status(200).send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>PDF Generator API</title>
+        <style>
+          body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+          code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; }
+          pre { background: #f4f4f4; padding: 15px; border-radius: 5px; overflow-x: auto; }
+          .status { color: #28a745; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <h1>📄 PDF Generator API</h1>
+        <p class="status">✅ API Online e Funcionando</p>
+        
+        <h2>🚀 Como usar:</h2>
+        <p>Envie uma requisição POST para <code>/api</code></p>
+        
+        <h3>Exemplo com cURL:</h3>
+        <pre>curl -X POST https://n8n-html-render.vercel.app/api \\
+  -H "Content-Type: application/json" \\
+  -d '{"html_final":"&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;body&gt;&lt;h1&gt;Teste&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;"}' \\
+  --output documento.pdf</pre>
+        
+        <h3>Formato JSON:</h3>
+        <pre>{
+  "html_final": "&lt;!DOCTYPE html&gt;&lt;html&gt;...&lt;/html&gt;"
+}</pre>
+        
+        <p><strong>Endpoint:</strong> <code>POST /api</code></p>
+        <p><strong>Region:</strong> GRU1 (São Paulo)</p>
+        <p><strong>Node:</strong> ${process.version}</p>
+      </body>
+      </html>
+    `);
+  }
+
+  // Validação do método HTTP para POST
   if (req.method !== 'POST') {
     return res.status(405).json({
       error: 'Método não permitido',
