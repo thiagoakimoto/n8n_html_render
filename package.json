@@ -16,8 +16,8 @@
     "vercel"
   ],
   "dependencies": {
-    "@sparticuz/chromium": "^119.0.0",
-    "puppeteer-core": "^21.0.0"
+    "@sparticuz/chromium": "^126.0.0",
+    "puppeteer-core": "^23.5.0"
   },
   "engines": {
     "node": ">=18.x"

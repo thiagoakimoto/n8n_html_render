@@ -36,26 +36,13 @@ module.exports = async (req, res) => {
       // Ambiente Serverless (Vercel/AWS Lambda)
       const chromium = require('@sparticuz/chromium');
       
-      // Otimizações para Vercel
-      chromium.setGraphicsMode = false;
-      
       chromiumExecutable = await chromium.executablePath();
       
       launchOptions = {
-        args: [
-          ...chromium.args,
-          '--disable-gpu',
-          '--disable-dev-shm-usage',
-          '--disable-setuid-sandbox',
-          '--no-first-run',
-          '--no-sandbox',
-          '--no-zygote',
-          '--single-process'
-        ],
+        args: chromium.args,
         defaultViewport: chromium.defaultViewport,
         executablePath: chromiumExecutable,
-        headless: chromium.headless,
-        ignoreHTTPSErrors: true,
+        headless: chromium.headless
       };
     } else {
       // Ambiente Local (Development)
