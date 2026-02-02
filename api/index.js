@@ -30,23 +30,20 @@ module.exports = async (req, res) => {
     const isProduction = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
     
     let launchOptions;
-    let puppeteerInstance;
 
     if (isProduction) {
-      // Ambiente Serverless (Vercel/AWS Lambda)
-      const chromium = require('chrome-aws-lambda');
-      puppeteerInstance = chromium.puppeteer;
+      // Ambiente Serverless (Vercel/AWS Lambda) - VERSÃO ATUAL
+      const chromium = require('@sparticuz/chromium');
       
       launchOptions = {
         args: chromium.args,
         defaultViewport: chromium.defaultViewport,
-        executablePath: await chromium.executablePath,
+        executablePath: await chromium.executablePath(),
         headless: chromium.headless,
         ignoreHTTPSErrors: true
       };
     } else {
       // Ambiente Local (Development)
-      puppeteerInstance = puppeteer;
       launchOptions = {
         headless: true,
         args: [
@@ -59,7 +56,7 @@ module.exports = async (req, res) => {
     }
 
     // Inicialização do Browser
-    browser = await puppeteerInstance.launch(launchOptions);
+    browser = await puppeteer.launch(launchOptions);
     const page = await browser.newPage();
 
     // Carregamento do conteúdo HTML
