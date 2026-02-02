@@ -29,12 +29,13 @@ module.exports = async (req, res) => {
     // Detecção do ambiente (Local vs Vercel/Produção)
     const isProduction = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
     
-    let chromiumExecutable;
     let launchOptions;
+    let puppeteerInstance;
 
     if (isProduction) {
       // Ambiente Serverless (Vercel/AWS Lambda)
       const chromium = require('chrome-aws-lambda');
+      puppeteerInstance = chromium.puppeteer;
       
       launchOptions = {
         args: chromium.args,
@@ -45,6 +46,7 @@ module.exports = async (req, res) => {
       };
     } else {
       // Ambiente Local (Development)
+      puppeteerInstance = puppeteer;
       launchOptions = {
         headless: true,
         args: [
@@ -57,7 +59,7 @@ module.exports = async (req, res) => {
     }
 
     // Inicialização do Browser
-    browser = await puppeteer.launch(launchOptions);
+    browser = await puppeteerInstance.launch(launchOptions);
     const page = await browser.newPage();
 
     // Carregamento do conteúdo HTML
