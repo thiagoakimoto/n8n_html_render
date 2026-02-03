@@ -1,29 +1,19 @@
 {
-  "name": "pdf-generator-api",
-  "version": "1.0.0",
-  "description": "Micro API serverless para geração de PDFs com Markdown e LaTeX",
+  "name": "n8n-html-to-pdf",
+  "version": "2.0.0",
+  "description": "HTML to PDF converter - optimized for Vercel",
   "main": "api/index.js",
   "type": "commonjs",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js",
-    "deploy": "vercel --prod"
+    "dev": "node server.js"
   },
-  "keywords": [
-    "pdf",
-    "markdown",
-    "latex",
-    "serverless",
-    "vercel"
-  ],
+  "keywords": ["pdf", "html", "serverless"],
   "dependencies": {
-    "@sparticuz/chromium": "126.0.0",
-    "puppeteer-core": "22.12.1"
+    "@sparticuz/chromium": "121.0.0",
+    "puppeteer-core": "21.11.0"
   },
   "engines": {
-    "node": "20.x"
-  },
-  "devDependencies": {
-    "vercel": "^33.0.0"
+    "node": "18.x"
   }
 }

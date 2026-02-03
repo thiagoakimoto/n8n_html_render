@@ -3,7 +3,8 @@
   "functions": {
     "api/**/*.js": {
       "maxDuration": 60,
-      "memory": 1024
+      "memory": 3008,
+      "runtime": "nodejs18.x"
     }
   },
   "regions": ["gru1"],
@@ -11,5 +12,8 @@
     "env": {
       "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true"
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api" }
+  ]
 }
