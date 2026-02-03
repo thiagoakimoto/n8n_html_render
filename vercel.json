@@ -4,7 +4,7 @@
     "api/**/*.js": {
       "maxDuration": 60,
       "memory": 1024,
-      "runtime": "nodejs18.x"
+      "runtime": "nodejs24.x"
     }
   },
   "regions": ["gru1"],
