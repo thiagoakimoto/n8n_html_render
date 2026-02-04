@@ -1,5 +1,4 @@
-const chromium = require('@sparticuz/chromium');
-const puppeteer = require('puppeteer-core');
+const chromium = require('chrome-aws-lambda');
 
 module.exports = async (req, res) => {
   // GET para status
@@ -7,7 +6,7 @@ module.exports = async (req, res) => {
     return res.status(200).json({
       status: 'online',
       service: 'HTML to PDF Converter',
-      version: '2.0',
+      version: '3.0',
       endpoint: 'POST /api com {html_final: "seu_html"}'
     });
   }
@@ -30,11 +29,11 @@ module.exports = async (req, res) => {
 
     console.log('📦 Iniciando conversão HTML -> PDF');
 
-    // Configuração otimizada para Vercel
-    browser = await puppeteer.launch({
+    // chrome-aws-lambda já vem com puppeteer embutido
+    browser = await chromium.puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
+      executablePath: await chromium.executablePath,
       headless: chromium.headless
     });
 
