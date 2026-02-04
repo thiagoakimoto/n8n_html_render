@@ -14,7 +14,8 @@
     "serverless"
   ],
   "dependencies": {
-    "playwright-aws-lambda": "^0.10.0"
+    "html-pdf-node": "^1.0.8",
+    "puppeteer": "^22.0.0"
   },
   "engines": {
     "node": "20.x"

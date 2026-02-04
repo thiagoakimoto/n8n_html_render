@@ -6,11 +6,6 @@
     }
   },
   "regions": ["gru1"],
-  "build": {
-    "env": {
-      "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true"
-    }
-  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/api" }
   ]

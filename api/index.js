@@ -1,4 +1,4 @@
-const playwright = require('playwright-aws-lambda');
+const htmlPdf = require('html-pdf-node');
 
 module.exports = async (req, res) => {
   // GET para status
@@ -6,9 +6,9 @@ module.exports = async (req, res) => {
     return res.status(200).json({
       status: 'online',
       service: 'HTML to PDF Converter',
-      version: '5.0',
+      version: '6.0',
       endpoint: 'POST /api com {html_final: "seu_html"}',
-      engine: 'playwright'
+      engine: 'html-pdf-node'
     });
   }
 
@@ -16,8 +16,6 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Use POST' });
   }
-
-  let browser = null;
 
   try {
     // Parse do body
@@ -28,24 +26,10 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Campo html_final obrigatório' });
     }
 
-    console.log('📦 Iniciando conversão HTML -> PDF (Playwright)');
+    console.log('📦 Iniciando conversão HTML -> PDF');
 
-    // Lançar browser - playwright-aws-lambda detecta automaticamente o ambiente
-    browser = await playwright.launchChromium();
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
-    console.log('📄 Carregando conteúdo...');
-    await page.setContent(html_final, { 
-      waitUntil: 'networkidle',
-      timeout: 30000
-    });
-
-    // Aguarda renderização
-    await page.waitForTimeout(1500);
-
-    console.log('📝 Gerando PDF...');
-    const pdf = await page.pdf({
+    // Opções do PDF
+    const options = { 
       format: 'A4',
       printBackground: true,
       margin: { 
@@ -53,30 +37,29 @@ module.exports = async (req, res) => {
         right: '15mm', 
         bottom: '20mm', 
         left: '15mm' 
-      }
-    });
+      },
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    };
 
-    await browser.close();
-    browser = null;
+    // Arquivo HTML
+    const file = { content: html_final };
 
-    console.log('✅ PDF gerado:', pdf.length, 'bytes');
+    console.log('📝 Gerando PDF...');
+    const pdfBuffer = await htmlPdf.generatePdf(file, options);
+
+    console.log('✅ PDF gerado:', pdfBuffer.length, 'bytes');
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="documento.pdf"');
-    return res.status(200).send(pdf);
+    return res.status(200).send(pdfBuffer);
 
   } catch (error) {
     console.error('❌ Erro:', error.message);
     console.error('❌ Stack:', error.stack);
-    
-    if (browser) {
-      await browser.close().catch(() => {});
-    }
 
     return res.status(500).json({
       error: 'Falha ao gerar PDF',
-      details: error.message,
-      stack: error.stack
+      details: error.message
     });
   }
 };
