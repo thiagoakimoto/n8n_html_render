@@ -1,4 +1,5 @@
-const chromium = require('chrome-aws-lambda');
+const chromium = require('@sparticuz/chromium');
+const puppeteer = require('puppeteer-core');
 
 module.exports = async (req, res) => {
   // GET para status
@@ -6,8 +7,9 @@ module.exports = async (req, res) => {
     return res.status(200).json({
       status: 'online',
       service: 'HTML to PDF Converter',
-      version: '3.0',
-      endpoint: 'POST /api com {html_final: "seu_html"}'
+      version: '4.0',
+      endpoint: 'POST /api com {html_final: "seu_html"}',
+      chromium: '126.0.0'
     });
   }
 
@@ -29,18 +31,30 @@ module.exports = async (req, res) => {
 
     console.log('📦 Iniciando conversão HTML -> PDF');
 
-    // chrome-aws-lambda já vem com puppeteer embutido
-    browser = await chromium.puppeteer.launch({
-      args: chromium.args,
+    // Lançar browser com configuração Vercel otimizada
+    browser = await puppeteer.launch({
+      args: [
+        ...chromium.args,
+        '--disable-gpu',
+        '--disable-dev-shm-usage',
+        '--disable-setuid-sandbox',
+        '--no-first-run',
+        '--no-sandbox',
+        '--single-process'
+      ],
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath,
-      headless: chromium.headless
+      executablePath: await chromium.executablePath(),
+      headless: true,
+      ignoreHTTPSErrors: true
     });
 
     const page = await browser.newPage();
 
     console.log('📄 Carregando conteúdo...');
-    await page.setContent(html_final, { waitUntil: 'networkidle0' });
+    await page.setContent(html_final, { 
+      waitUntil: 'networkidle0',
+      timeout: 30000
+    });
 
     // Aguarda renderização
     await page.evaluate(() => new Promise(r => setTimeout(r, 1500)));
@@ -63,6 +77,7 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('❌ Erro:', error.message);
+    console.error('❌ Stack:', error.stack);
     
     if (browser) {
       await browser.close().catch(() => {});
@@ -70,7 +85,8 @@ module.exports = async (req, res) => {
 
     return res.status(500).json({
       error: 'Falha ao gerar PDF',
-      details: error.message
+      details: error.message,
+      stack: error.stack
     });
   }
 };
