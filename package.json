@@ -14,8 +14,7 @@
     "serverless"
   ],
   "dependencies": {
-    "@sparticuz/chromium": "119.0.2",
-    "puppeteer-core": "21.6.0"
+    "playwright-aws-lambda": "^0.10.0"
   },
   "engines": {
     "node": "20.x"

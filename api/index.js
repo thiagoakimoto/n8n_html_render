@@ -1,5 +1,4 @@
-const chromium = require('@sparticuz/chromium');
-const puppeteer = require('puppeteer-core');
+const playwright = require('playwright-aws-lambda');
 
 module.exports = async (req, res) => {
   // GET para status
@@ -7,9 +6,9 @@ module.exports = async (req, res) => {
     return res.status(200).json({
       status: 'online',
       service: 'HTML to PDF Converter',
-      version: '4.0',
+      version: '5.0',
       endpoint: 'POST /api com {html_final: "seu_html"}',
-      chromium: '126.0.0'
+      engine: 'playwright'
     });
   }
 
@@ -29,41 +28,32 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Campo html_final obrigatório' });
     }
 
-    console.log('📦 Iniciando conversão HTML -> PDF');
+    console.log('📦 Iniciando conversão HTML -> PDF (Playwright)');
 
-    // Lançar browser com configuração Vercel otimizada
-    browser = await puppeteer.launch({
-      args: [
-        ...chromium.args,
-        '--disable-gpu',
-        '--disable-dev-shm-usage',
-        '--disable-setuid-sandbox',
-        '--no-first-run',
-        '--no-sandbox',
-        '--single-process'
-      ],
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
-      headless: true,
-      ignoreHTTPSErrors: true
-    });
-
-    const page = await browser.newPage();
+    // Lançar browser - playwright-aws-lambda detecta automaticamente o ambiente
+    browser = await playwright.launchChromium();
+    const context = await browser.newContext();
+    const page = await context.newPage();
 
     console.log('📄 Carregando conteúdo...');
     await page.setContent(html_final, { 
-      waitUntil: 'networkidle0',
+      waitUntil: 'networkidle',
       timeout: 30000
     });
 
     // Aguarda renderização
-    await page.evaluate(() => new Promise(r => setTimeout(r, 1500)));
+    await page.waitForTimeout(1500);
 
     console.log('📝 Gerando PDF...');
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' }
+      margin: { 
+        top: '20mm', 
+        right: '15mm', 
+        bottom: '20mm', 
+        left: '15mm' 
+      }
     });
 
     await browser.close();
