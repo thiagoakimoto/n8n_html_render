@@ -1,79 +1,97 @@
-const http = require('http');
-const handler = require('./api/index');
+const express = require('express');
+const puppeteer = require('puppeteer');
 
+const app = express();
 const PORT = process.env.PORT || 3000;
 
-const server = http.createServer(async (req, res) => {
-  // Simular objeto de request/response da Vercel
-  const chunks = [];
-  
-  req.on('data', chunk => {
-    chunks.push(chunk);
-  });
+// Middleware para JSON
+app.use(express.json({ limit: '50mb' }));
 
-  req.on('end', async () => {
-    // Parse do body
-    let body = {};
-    if (chunks.length > 0) {
-      const data = Buffer.concat(chunks).toString();
-      try {
-        body = JSON.parse(data);
-      } catch (e) {
-        body = {};
-      }
-    }
-
-    // Criar objeto de request compatível com Vercel
-    const mockReq = {
-      method: req.method,
-      url: req.url,
-      headers: req.headers,
-      body: body
-    };
-
-    // Criar objeto de response compatível com Vercel
-    const mockRes = {
-      statusCode: 200,
-      headers: {},
-      
-      status(code) {
-        this.statusCode = code;
-        return this;
-      },
-      
-      setHeader(name, value) {
-        this.headers[name] = value;
-        return this;
-      },
-      
-      json(data) {
-        this.headers['Content-Type'] = 'application/json';
-        res.writeHead(this.statusCode, this.headers);
-        res.end(JSON.stringify(data));
-      },
-      
-      send(data) {
-        res.writeHead(this.statusCode, this.headers);
-        res.end(data);
-      }
-    };
-
-    try {
-      await handler(mockReq, mockRes);
-    } catch (error) {
-      console.error('Erro no handler:', error);
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Erro interno do servidor' }));
-    }
+// GET - Status
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    service: 'HTML to PDF Converter',
+    version: '1.0.0',
+    platform: 'Railway',
+    endpoint: 'POST / com {html_final: "seu_html"}'
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`🚀 Servidor local rodando em http://localhost:${PORT}`);
-  console.log(`📡 Endpoint: POST http://localhost:${PORT}/api`);
-  console.log(`\n💡 Exemplo de teste:\n`);
-  console.log(`curl -X POST http://localhost:${PORT}/api \\`);
-  console.log(`  -H "Content-Type: application/json" \\`);
-  console.log(`  -d '{"texto_markdown":"# Teste\\n\\nFórmula: $E=mc^2$"}' \\`);
-  console.log(`  --output teste.pdf\n`);
+// POST - Gerar PDF
+app.post('/', async (req, res) => {
+  let browser = null;
+
+  try {
+    const { html_final } = req.body;
+
+    if (!html_final) {
+      return res.status(400).json({ error: 'Campo html_final obrigatório' });
+    }
+
+    console.log('📦 Iniciando conversão HTML -> PDF');
+
+    // Lançar browser
+    browser = await puppeteer.launch({
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process'
+      ]
+    });
+
+    const page = await browser.newPage();
+
+    console.log('📄 Carregando conteúdo...');
+    await page.setContent(html_final, { 
+      waitUntil: 'networkidle0',
+      timeout: 30000
+    });
+
+    // Aguarda renderização
+    await new Promise(r => setTimeout(r, 1500));
+
+    console.log('📝 Gerando PDF...');
+    const pdf = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { 
+        top: '20mm', 
+        right: '15mm', 
+        bottom: '20mm', 
+        left: '15mm' 
+      }
+    });
+
+    await browser.close();
+    browser = null;
+
+    console.log('✅ PDF gerado:', pdf.length, 'bytes');
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="documento.pdf"');
+    return res.send(pdf);
+
+  } catch (error) {
+    console.error('❌ Erro:', error.message);
+
+    if (browser) {
+      await browser.close().catch(() => {});
+    }
+
+    return res.status(500).json({
+      error: 'Falha ao gerar PDF',
+      details: error.message
+    });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+  console.log(`📡 Endpoint: POST http://localhost:${PORT}/`);
 });
